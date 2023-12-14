@@ -145,7 +145,7 @@ def get_video():
 
 
 @Ctr.route("/students")
-def manage():
+def manage_students():
     if not session.get("teacher"):
         return render_template("login.html")
 
@@ -301,20 +301,68 @@ def add_student():
     return render_template("add_student.html")
 
 
-@Ctr.route("/attendance/take_attendance")
-def get_home_page():
+@Ctr.route("/attendance/take_attendance", methods = ["GET", "POST"])
+def take_attendance():
     if not session.get("teacher"):
         return render_template("login.html")
 
-    today_date = datetime.today().strftime("%d/%m/%Y")
+    if request.method == "POST":
+        today_date = datetime.today().strftime("%Y-%m-%d")
+
+        if check_class_attendance_existed(today_date) == 0:
+            add_class_attendance(today_date)
+
+        return 
+
     return render_template("take_attendance.html", today_date=today_date)
 
 
-@Ctr.route("/unlock")
-def unlock():
+@Ctr.route("/attendance/class_attendance", methods=["POST", "GET"])
+def class_attendance():
     if not session.get("teacher"):
         return render_template("login.html")
 
-    send_command("open")
-    flash("Door unlocked!", "info")
-    return render_template("take_attendance.html")
+    if request.method == "POST":
+        selected_date = request.form.get("selected_date")
+
+        students, student_attendance = get_class_attendance(selected_date=selected_date)
+
+        students_index_list = []
+        if not (students is None) and not (student_attendance is None):
+            for key, value in students.items():
+                students_index_list.append(value)
+
+            for key, value in student_attendance.items():
+                for i in range(len(students_index_list)):
+                    if students_index_list[i]["student_id"] == key:
+                        students_index_list[i]["attendance_time"] = value
+                        break
+
+        return render_template(
+            "class_attendance.html",
+            selected_date=selected_date,
+            students=students_index_list,
+        )
+
+    return render_template("class_attendance.html")
+
+
+@Ctr.route("/attendance/student_attendance", methods=["POST", "GET"])
+def student_attendance():
+    if not session.get("teacher"):
+        return render_template("login.html")
+    
+    if request.method == "POST":
+
+        return render_template("student_attendance.html")
+    
+    return render_template("student_attendance.html")
+
+# @Ctr.route("/unlock")
+# def unlock():
+#     if not session.get("teacher"):
+#         return render_template("login.html")
+
+#     send_command("open")
+#     flash("Door unlocked!", "info")
+#     return render_template("take_attendance.html")

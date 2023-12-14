@@ -121,10 +121,11 @@ while True:
                 print(elapsed_seconds)
 
                 if elapsed_seconds > 30:
-                    ref = db.reference(f'student/{id}')
+                    student_ref = db.reference(f'student/{id}')
+
                     student_info['total_attendance'] += 1
-                    ref.child('total_attendance').set(student_info['total_attendance'])
-                    ref.child('last_attendance_time').set(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    student_ref.child('total_attendance').set(student_info['total_attendance'])
+                    student_ref.child('last_attendance_time').set(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     mode_type = 3
                     open = True

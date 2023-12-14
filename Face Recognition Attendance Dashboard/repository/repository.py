@@ -19,7 +19,7 @@ bucket = storage.bucket()
 student_ref = db.reference("student")
 teacher_ref = db.reference("teacher")
 account_ref = db.reference("account")
-
+class_ref = db.reference("class")
 
 def check_login(username=None, password=None):
     try:
@@ -78,7 +78,7 @@ def check_existed(student_id, tel):
 def add_new_student(name, dob, tel, student_id, major, starting_year, email, img):
     file_name = os.path.join("imgs/student/", str(student_id) + ".jpg")
 
-    data = {
+    student_data = {
         f"{student_id}": {
             "name": f"{name}",
             "dob": f"{dob}",
@@ -87,7 +87,6 @@ def add_new_student(name, dob, tel, student_id, major, starting_year, email, img
             "major": f"{major}",
             "starting_year": f"{starting_year}",
             "email": f"{email}",
-            "total_attendance": 1,
         },
     }
 
@@ -97,7 +96,7 @@ def add_new_student(name, dob, tel, student_id, major, starting_year, email, img
         blob = bucket.blob(file_name)
         blob.upload_from_filename(file_name)
 
-        for key, value in data.items():
+        for key, value in student_data.items():
             student_ref.child(key).set(value)
 
         return 1
@@ -164,3 +163,41 @@ def train():
 
     except subprocess.CalledProcessError as e:
         print(f"Error running the script: {e}")
+
+
+def add_class_attendance(date):
+    try:
+        students = get_all_students()
+        class_attendance = class_ref.child("attendance").child(f"{date}")
+
+        for key, value in students.items():
+            class_attendance.child(key).set("")
+        
+        return 1
+    except Exception as e:
+        print(f"Error: {e}")
+        return 0
+    
+
+def check_class_attendance_existed(date):
+    try:
+        class_attendance = class_ref.child("attendance").get(f"{date}")
+        if not (class_attendance is None):
+            return 1
+        else:
+            return 0
+    except Exception as e:
+        print(f"Error: {e}")
+        return -1
+
+
+def get_class_attendance(selected_date):
+    try:
+        students = get_all_students()
+        student_attendance = dict(class_ref.child("attendance").child(f"{selected_date}").get())
+
+        return students, student_attendance
+    except Exception as e:
+        print(f"Error: {e}")
+        return None, None
+    
