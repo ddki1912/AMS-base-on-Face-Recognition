@@ -67,7 +67,6 @@
                         <h6 class="collapse-header">Manage Attendance</h6>
                         <a class="collapse-item" href="/attendance/take_attendance">Take Attendance</a>
                         <a class="collapse-item" href="/attendance/class_attendance">View Class Attendance</a>
-                        <a class="collapse-item" href="/attendance/student_attendance">View Student Attendance</a>
                         <a class="collapse-item" href="/attendance/report">Report (xls)</a>
                     </div>
                 </div>
@@ -136,7 +135,7 @@
                 <!-- Container Fluid-->
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Class Teacher Dashboard (1)
+                        <h1 class="h3 mb-0 text-gray-800">Class Teacher Dashboard (N10)
                         </h1>
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/home">Home</a></li>
@@ -153,7 +152,7 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-uppercase mb-1">Students</div>
                                             <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
-                                                1
+                                                {{number_of_students}}
                                             </div>
                                         </div>
                                         <div class="col-auto">
@@ -211,7 +210,7 @@
                                             <div class="text-xs font-weight-bold text-uppercase mb-1">Student
                                                 Attendance</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                1
+                                                {{number_of_attendance}}
                                             </div>
                                         </div>
                                         <div class="col-auto">

@@ -26,7 +26,7 @@ print("Loading data ...")
 student_info_list = dict(db.reference("student").get())
 student_img_list = {}
 for key, value in student_info_list.items():
-    blob = bucket.get_blob(f'imgs/{key}.jpg')
+    blob = bucket.get_blob(f'imgs/student/{key}.jpg')
     array = np.frombuffer(blob.download_as_string(), np.uint8)
     student_img = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
     student_img = cv2.resize(student_img, (216, 216))
@@ -45,7 +45,7 @@ for path in mode_path_list:
 
 # Load the encoding file
 print("Loading encoded file ...")
-file = open('D:/B20DCCN352/Year_4/Semester_1/IOT/BTL/EncodeFile.p', 'rb')
+file = open('D:\GitHub\IOT\Face Recognition Attendance Dashboard\EncodeFile.p', 'rb')
 encoded_known_list_with_ids = pickle.load(file)
 file.close()
 
@@ -63,18 +63,18 @@ url_low = "http://192.168.1.24/cam-lo.jpg"
 url_mid = "http://192.168.1.24/cam-mid.jpg"
 url_high = "http://192.168.1.24/cam-hi.jpg"
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 640)
-cap.set(4, 480)
+# cap = cv2.VideoCapture(0)
+# cap.set(3, 640)
+# cap.set(4, 480)
 
 open = False
 
 while True:
-    # frame = urllib.request.urlopen(url_high)
-    # img_np = np.array(bytearray(frame.read()), dtype=np.uint8)
-    # img = cv2.imdecode(img_np, -1)
-    # img = cv2.resize(img, (640, 480))
-    success, img = cap.read()
+    frame = urllib.request.urlopen(url_high)
+    img_np = np.array(bytearray(frame.read()), dtype=np.uint8)
+    img = cv2.imdecode(img_np, -1)
+    img = cv2.resize(img, (640, 480))
+    # success, img = cap.read()
 
     small_img = cv2.resize(img, (0, 0), None, fx=0.25, fy=0.25)
     small_img = cv2.cvtColor(small_img, cv2.COLOR_BGR2RGB)
@@ -115,17 +115,40 @@ while True:
                 student_img = student_img_list[id]
 
                 # Update data of attendance
-                datetime_object = datetime.strptime(student_info['last_attendance_time'],
-                                                "%Y-%m-%d %H:%M:%S")
-                elapsed_seconds = (datetime.now() - datetime_object).total_seconds()
-                print(elapsed_seconds)
+                try:
+                    student_attendance = dict(
+                        db.reference('class').child("attendance").child(datetime.today().strftime("%Y-%m-%d")).get()
+                    )
+                except:
+                    date = datetime.today().strftime("%Y-%m-%d")
+                    data = {f"{date}": {}}
 
-                if elapsed_seconds > 30:
-                    student_ref = db.reference(f'student/{id}')
+                    students = dict(db.reference("student").get())
 
-                    student_info['total_attendance'] += 1
-                    student_ref.child('total_attendance').set(student_info['total_attendance'])
-                    student_ref.child('last_attendance_time').set(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    for key, value in students.items():
+                        data[date][key] = ""
+
+                    for key, value in data.items():
+                        db.reference("class").child("attendance").child(date).set(value)
+
+                    student_attendance = dict(
+                        db.reference('class').child("attendance").child(datetime.today().strftime("%Y-%m-%d")).get()
+                    )
+                 
+                if student_attendance[id] == "":
+                    student_attendance[id] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    db.reference("class").child("attendance").child(datetime.today().strftime("%Y-%m-%d")).child(id).set(student_attendance[id])
+                # datetime_object = datetime.strptime(student_info['last_attendance_time'],
+                #                                 "%Y-%m-%d %H:%M:%S")
+                # elapsed_seconds = (datetime.now() - datetime_object).total_seconds()
+                # print(elapsed_seconds)
+
+                # if elapsed_seconds > 30:
+                #     student_ref = db.reference(f'student/{id}')
+
+                #     student_info['total_attendance'] += 1
+                #     student_ref.child('total_attendance').set(student_info['total_attendance'])
+                #     student_ref.child('last_attendance_time').set(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     mode_type = 3
                     open = True
@@ -142,14 +165,14 @@ while True:
 
                 # Render student infomation
                 if counter <= 10:
-                    cv2.putText(background_img, str(student_info['total_attendance']), (861, 125),
-                                cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
+                    # cv2.putText(background_img, str(student_info['total_attendance']), (861, 125),
+                    #             cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
                     cv2.putText(background_img, str(student_info['major']), (1006, 550),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
                     cv2.putText(background_img, str(id), (1006, 493),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
-                    cv2.putText(background_img, str(student_info['year']), (1025, 625),
-                                cv2.FONT_HERSHEY_COMPLEX, 0.6, (100, 100, 100), 1)
+                    # cv2.putText(background_img, str(student_info['year']), (1025, 625),
+                    #             cv2.FONT_HERSHEY_COMPLEX, 0.6, (100, 100, 100), 1)
                     cv2.putText(background_img, str(student_info['starting_year']), (1125, 625),
                                 cv2.FONT_HERSHEY_COMPLEX, 0.6, (100, 100, 100), 1)
 
@@ -180,6 +203,7 @@ while True:
         open = False
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
+        open = False
         break
 
 cv2.destroyAllWindows()

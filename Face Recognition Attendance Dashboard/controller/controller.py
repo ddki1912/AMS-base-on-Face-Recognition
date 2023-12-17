@@ -5,10 +5,13 @@ from flask import (
     request,
     session,
     Response,
-    flash,
+    send_file,
+    jsonify,
 )
 
 import cv2
+import pickle
+import pandas as pd
 import os
 import face_recognition
 import numpy as np
@@ -63,8 +66,12 @@ def logout():
 def home():
     if not session.get("teacher"):
         return render_template("login.html")
+    
+    students, student_attendance = get_report()
+    number_of_students = len(students)
+    number_of_attendance = len(student_attendance)
 
-    return render_template("index.html")
+    return render_template("index.html", number_of_students = number_of_students, number_of_attendance=number_of_attendance)
 
 
 # 192.168.208.251
@@ -75,72 +82,98 @@ url_high = "http://192.168.1.24/cam-hi.jpg"
 known_face_encodings = []
 known_face_names = []
 
-# for file in os.listdir("imgs"):
-#     face_img = face_recognition.load_image_file(file=("imgs/" + file))
-#     face_encoding = face_recognition.face_encodings(face_image=face_img)[0]
-#     known_face_encodings.append(face_encoding)
-#     known_face_names.append(file.removesuffix(".jpg"))
+print("Loading encoded file ...")
+file = open("D:\GitHub\IOT\Face Recognition Attendance Dashboard\EncodeFile.p", "rb")
+encoded_known_list_with_ids = pickle.load(file)
+file.close()
+
+encoded_known_list, student_id_list = encoded_known_list_with_ids
+known_face_encodings = encoded_known_list
+known_face_names = student_id_list
+print(student_id_list)
+print("Encoded file loaded.")
 
 face_locations = []
 face_encodings = []
 process_frame = True
 
 
-def get_video_frames():
+def get_video_frames(recognition):
     while True:
         # Read camera frame
         img = urllib.request.urlopen(url_high)
         img_np = np.array(bytearray(img.read()), dtype=np.uint8)
         frame = cv2.imdecode(img_np, -1)
 
-        # # Resize frame of video to 1/4 size for faster face recognition processing
-        # small_frame = cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
+        if recognition == 1:
+            # Resize frame of video to 1/4 size for faster face recognition processing
+            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
-        # # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        # rgb_small_frame = np.ascontiguousarray(small_frame[:, :, ::-1])
+            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+            rgb_small_frame = np.ascontiguousarray(small_frame[:, :, ::-1])
 
-        # # Find all the faces and face encodings in the current frame of video
-        # face_locations = face_recognition.face_locations(rgb_small_frame)
-        # face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-        # face_names = []
-        # for face_encoding in face_encodings:
-        #     # See if the face is a match for the known face(s)
-        #     matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-        #     name = "Unknown"
+            # Find all the faces and face encodings in the current frame of video
+            face_locations = face_recognition.face_locations(rgb_small_frame)
+            face_encodings = face_recognition.face_encodings(
+                rgb_small_frame, face_locations
+            )
+            face_names = []
+            for face_encoding in face_encodings:
+                # See if the face is a match for the known face(s)
+                matches = face_recognition.compare_faces(
+                    known_face_encodings, face_encoding
+                )
+                name = "Unknown"
 
-        #     # Or instead, use the known face with the smallest distance to the new face
-        #     face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        #     best_match_index = np.argmin(face_distances)
-        #     if matches[best_match_index]:
-        #         name = known_face_names[best_match_index]
+                # Or instead, use the known face with the smallest distance to the new face
+                face_distances = face_recognition.face_distance(
+                    known_face_encodings, face_encoding
+                )
+                best_match_index = np.argmin(face_distances)
+                if matches[best_match_index]:
+                    name = known_face_names[best_match_index]
+                    students, student_attendance = get_class_attendance(
+                        selected_date=datetime.today().strftime("%Y-%m-%d")
+                    )
+                    if student_attendance[name] == "":
+                        take_student_attendance(
+                            name,
+                            datetime.today().strftime("%Y-%m-%d"),
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        )
 
-        #     face_names.append(name)
+                face_names.append(name)
 
-        # # Display the results
-        # for (top, right, bottom, left), name in zip(face_locations, face_names):
-        #     # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-        #     top *= 4
-        #     right *= 4
-        #     bottom *= 4
-        #     left *= 4
+            # Display the results
+            for (top, right, bottom, left), name in zip(face_locations, face_names):
+                # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+                top *= 4
+                right *= 4
+                bottom *= 4
+                left *= 4
 
-        #     # Draw a box around the face
-        #     cv2.rectangle(frame, (left, top-50), (right, bottom), (0, 0, 255), 2)
+                # Draw a box around the face
+                cv2.rectangle(frame, (left, top - 50), (right, bottom), (0, 0, 255), 2)
 
-        #     # Draw a label with a name below the face
-        #     cv2.rectangle(frame, (left, bottom), (right, bottom+25), (0, 0, 255), cv2.FILLED)
-        #     font = cv2.FONT_HERSHEY_DUPLEX
-        #     cv2.putText(frame, name, (left + 6, bottom + 25), font, 1.0, (255, 255, 255), 1)
+                # Draw a label with a name below the face
+                cv2.rectangle(
+                    frame, (left, bottom), (right, bottom + 25), (0, 0, 255), cv2.FILLED
+                )
+                font = cv2.FONT_HERSHEY_DUPLEX
+                cv2.putText(
+                    frame, name, (left + 6, bottom + 25), font, 1.0, (255, 255, 255), 1
+                )
 
         ret, buffer = cv2.imencode(".jpg", frame)
         frame = buffer.tobytes()
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
 
-@Ctr.route("/video")
-def get_video():
+@Ctr.route("/video/<int:recognition>")
+def get_video(recognition):
     return Response(
-        get_video_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
+        get_video_frames(recognition=recognition),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
 
@@ -301,20 +334,39 @@ def add_student():
     return render_template("add_student.html")
 
 
-@Ctr.route("/attendance/take_attendance", methods = ["GET", "POST"])
+@Ctr.route("/attendance/take_attendance", methods=["GET"])
 def take_attendance():
     if not session.get("teacher"):
         return render_template("login.html")
 
-    if request.method == "POST":
-        today_date = datetime.today().strftime("%Y-%m-%d")
-
-        if check_class_attendance_existed(today_date) == 0:
-            add_class_attendance(today_date)
-
-        return 
+    today_date = datetime.today().strftime("%Y-%m-%d")
+    if check_class_attendance_existed(today_date) == 0:
+        add_class_attendance(today_date)
 
     return render_template("take_attendance.html", today_date=today_date)
+
+
+@Ctr.route("/load_data")
+def count_today_scan():
+    if not session.get("teacher"):
+        return render_template("login.html")
+
+    students, student_attendance = get_class_attendance(
+        selected_date=datetime.today().strftime("%Y-%m-%d")
+    )
+
+    students_index_list = []
+
+    for key, value in students.items():
+        students_index_list.append(value)
+
+    for key, value in student_attendance.items():
+        for i in range(len(students_index_list)):
+            if students_index_list[i]["student_id"] == key:
+                students_index_list[i]["attendance_time"] = value
+                break
+
+    return jsonify(response=students_index_list)
 
 
 @Ctr.route("/attendance/class_attendance", methods=["POST", "GET"])
@@ -347,22 +399,61 @@ def class_attendance():
     return render_template("class_attendance.html")
 
 
-@Ctr.route("/attendance/student_attendance", methods=["POST", "GET"])
+@Ctr.route("/attendance/report")
 def student_attendance():
     if not session.get("teacher"):
         return render_template("login.html")
-    
-    if request.method == "POST":
 
-        return render_template("student_attendance.html")
-    
-    return render_template("student_attendance.html")
+    data = {"STT": [], "ID": [], "Name": [], "DOB": [], "Tel": [], "Email": []}
+    students_index_list = []
 
-# @Ctr.route("/unlock")
-# def unlock():
-#     if not session.get("teacher"):
-#         return render_template("login.html")
+    students, student_attendance = get_report()
 
-#     send_command("open")
-#     flash("Door unlocked!", "info")
-#     return render_template("take_attendance.html")
+    for key, value in students.items():
+        students_index_list.append(value)
+
+    for i in range(len(students_index_list)):
+        data["STT"].append(i + 1)
+        data["ID"].append(students_index_list[i]["student_id"])
+        data["Name"].append(students_index_list[i]["name"])
+        data["DOB"].append(students_index_list[i]["dob"])
+        data["Tel"].append(students_index_list[i]["tel"])
+        data["Email"].append(students_index_list[i]["email"])
+
+    for key, value in student_attendance.items():
+        data[key] = []
+        id_list = []
+        time_list = []
+
+        for id, time in value.items():
+            id_list.append(id)
+            time_list.append(time)
+
+        for id in data["ID"]:
+            try:
+                index = id_list.index(id)
+                if time_list[index] == "":
+                    data[key].append("x")
+                else:
+                    data[key].append("")
+            except:
+                data[key].append("x")
+
+    df = pd.DataFrame(data)
+
+    attendance_report_file_path = "attendance_report.xlsx"
+    class_name = "N10"
+    df.to_excel(
+        excel_writer=attendance_report_file_path, sheet_name=class_name, index=False
+    )
+
+    return send_file(attendance_report_file_path, as_attachment=True)
+
+
+@Ctr.route("/unlock")
+def unlock():
+    if not session.get("teacher"):
+        return render_template("login.html")
+
+    send_command("open")
+    return "Door unlocked!"

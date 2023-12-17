@@ -1,7 +1,5 @@
 import firebase_admin
 from firebase_admin import db, credentials, storage
-import numpy as np
-from datetime import datetime
 import cv2
 import os
 import subprocess
@@ -20,6 +18,7 @@ student_ref = db.reference("student")
 teacher_ref = db.reference("teacher")
 account_ref = db.reference("account")
 class_ref = db.reference("class")
+
 
 def check_login(username=None, password=None):
     try:
@@ -167,23 +166,26 @@ def train():
 
 def add_class_attendance(date):
     try:
+        data = {f"{date}": {}}
         students = get_all_students()
-        class_attendance = class_ref.child("attendance").child(f"{date}")
 
         for key, value in students.items():
-            class_attendance.child(key).set("")
-        
+            data[date][key] = ""
+
+        for key, value in data.items():
+            class_ref.child("attendance").child(date).set(value)
+
         return 1
     except Exception as e:
         print(f"Error: {e}")
         return 0
-    
+
 
 def check_class_attendance_existed(date):
     try:
-        class_attendance = class_ref.child("attendance").get(f"{date}")
+        class_attendance = class_ref.child("attendance").child(date).get()
         if not (class_attendance is None):
-            return 1
+            return class_attendance
         else:
             return 0
     except Exception as e:
@@ -191,13 +193,38 @@ def check_class_attendance_existed(date):
         return -1
 
 
+def take_student_attendance(student_id, date, time):
+    try:
+        student_attendance = class_ref.child("attendance").child(date).get()
+        student_attendance[student_id] = time
+        class_ref.child("attendance").child(f"{date}").child(f"{student_id}").set(
+            student_attendance[student_id]
+        )
+        return 1
+    except Exception as e:
+        print(f"Error: {e}")
+        return 0
+
+
 def get_class_attendance(selected_date):
     try:
         students = get_all_students()
-        student_attendance = dict(class_ref.child("attendance").child(f"{selected_date}").get())
+        student_attendance = dict(
+            class_ref.child("attendance").child(selected_date).get()
+        )
 
         return students, student_attendance
     except Exception as e:
         print(f"Error: {e}")
         return None, None
-    
+
+
+def get_report():
+    try:
+        students = get_all_students()
+        student_attendance = dict(class_ref.child("attendance").get())
+
+        return students, student_attendance
+    except Exception as e:
+        print(f"Error: {e}")
+        return None, None

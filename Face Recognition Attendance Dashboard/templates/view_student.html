@@ -67,7 +67,6 @@
                         <h6 class="collapse-header">Manage Attendance</h6>
                         <a class="collapse-item" href="/attendance/take_attendance">Take Attendance</a>
                         <a class="collapse-item" href="/attendance/class_attendance">View Class Attendance</a>
-                        <a class="collapse-item" href="/attendance/student_attendance">View Student Attendance</a>
                         <a class="collapse-item" href="/attendance/report">Report (xls)</a>
                     </div>
                 </div>
@@ -154,7 +153,8 @@
                                     class="d-flex flex-md-column justify-content-lg-between"
                                     style="width: 50%; padding-right: 5%;">
                                     <input type="hidden" name="_method" value="" readonly required>
-                                    <input type="hidden" name="update_student_image" value="{{image_updated}}" readonly required>
+                                    <input type="hidden" name="update_student_image" value="{{image_updated}}" readonly
+                                        required>
                                     <div class="d-flex justify-content-between" style=" width: 100%;">
                                         <div class="form-group" style="width: 100%;">
                                             <label for="name">Name</label>
@@ -210,7 +210,7 @@
                                                 value="{{student['email']}}" readonly required>
                                         </div>
                                     </div>
-                                    
+
                                     <button type="button" class="btn btn-warning update-image-btn"
                                         style="display: none;">Update image</button>
                                     <button type="button" class="btn btn-success save-image-btn"
@@ -271,7 +271,7 @@
         const saveImageBtn = document.querySelector(".save-image-btn")
         const studentImage = document.querySelector("img[alt='Student Image']")
 
-        if(imageUpdated.value == 1){
+        if (imageUpdated.value == 1) {
             for (let i = 0; i < input.length; i++) {
                 if (input[i].name != "student_id") {
                     input[i].removeAttribute("readonly")
@@ -308,7 +308,7 @@
         updateImageBtn.addEventListener("click", () => {
             updateImageBtn.setAttribute("style", "display: none;");
             saveImageBtn.removeAttribute("style");
-            studentImage.setAttribute("src", "/video");
+            studentImage.setAttribute("src", "/video/0");
         })
 
         saveImageBtn.addEventListener("click", () => {

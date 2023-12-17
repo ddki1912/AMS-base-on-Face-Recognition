@@ -66,7 +66,6 @@
                         <h6 class="collapse-header">Manage Attendance</h6>
                         <a class="collapse-item" href="/attendance/take_attendance">Take Attendance</a>
                         <a class="collapse-item" href="/attendance/class_attendance">View Class Attendance</a>
-                        <a class="collapse-item" href="/attendance/student_attendance">View Student Attendance</a>
                         <a class="collapse-item" href="/attendance/report">Report (xls)</a>
                     </div>
                 </div>
@@ -112,7 +111,8 @@
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <img class="img-profile rounded-circle" src="/static/imgs/user-icn.png"
                                     style="max-width: 60px">
-                                <span class="ml-2 d-none d-lg-inline text-white small"><b>{{session["teacher"]["name"]}}</b></span>
+                                <span
+                                    class="ml-2 d-none d-lg-inline text-white small"><b>{{session["teacher"]["name"]}}</b></span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
@@ -137,7 +137,8 @@
                         <h1 class="h3 mb-0 text-gray-800">Take Attendance (Today's Date : {{today_date}})</h1>
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/home">Home</a></li>
-                            <li class="breadcrumb-item active" aria-current="page"><a href="/attendance/take_attendance">Take Attendance</a></li>
+                            <li class="breadcrumb-item active" aria-current="page"><a
+                                    href="/attendance/take_attendance">Take Attendance</a></li>
                         </ol>
                     </div>
 
@@ -150,13 +151,16 @@
                                         <div class="card mb-4">
                                             <div
                                                 class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                                <h6 class="m-0 font-weight-bold text-primary">All Student in (1) Class
+                                                <h6 class="m-0 font-weight-bold text-primary">All Student in (N10) Class
                                                 </h6>
                                             </div>
                                             <div class="table-responsive p-3">
-                                                <img class="img-rounded mb-3 text-center" src="{{url_for('controller.get_video')}}" width="100%" alt="Streaming">
+                                                <div class="text-center">
+                                                    <img class="img-rounded mb-3" src="/video/1" width="50%"
+                                                        height="100%" alt="Streaming">
+                                                </div>
                                                 <table class="table align-items-center table-flush table-hover">
-                                                    <thead class="thead-light">
+                                                    <thead class="thead-light text-center">
                                                         <tr>
                                                             <th style="width: 5%;">#</th>
                                                             <th style="width: 35%;">ID</th>
@@ -164,13 +168,18 @@
                                                             <th style="width: 25%;">Time</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody>
-
+                                                    <tbody id="data">
                                                     </tbody>
                                                 </table>
                                                 <br>
-                                                <!-- <button type="submit" name="save" class="btn btn-primary">Take
-                                                    Attendance</button> -->
+                                                <div class="d-flex justify-content-lg-start">
+                                                    <button id="send-email-btn" type="button" class="btn btn-primary">
+                                                        Send email
+                                                    </button>
+                                                    <button id="unlock-btn" type="button" class="btn btn-warning ml-2">
+                                                        Unlock
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -209,6 +218,80 @@
     <!-- Page level plugins -->
     <script src="/static/datatables/jquery.dataTables.min.js"></script>
     <script src="/static/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            checkNewScan();
+
+            function checkNewScan() {
+                reloadTable();
+                setTimeout(checkNewScan, 1000);
+            }
+
+            function reloadTable() {
+                $.ajax({
+                    url: '/load_data',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        var tr = $("#data");
+                        tr.empty();
+
+                        $.each(response, function (index, item) {
+                            if (item.length > 0) {
+                                for (let i = 0; i < item.length; i++) {
+                                    let time = "";
+                                    if (item[i]["attendance_time"]) {
+                                        time = item[i]["attendance_time"].split(" ")[1];
+                                    }
+                                    tr.append("<tr class='text-center' style='height: fit-content;'>" +
+                                        "<td class='text-center' style='padding: 10px;'>" + (i + 1) + "</td>" +
+                                        "<td class='text-center' style='padding: 10px;'>" + item[i]["student_id"] + "</td>" +
+                                        "<td class='text-center' style='padding: 10px;'>" + item[i]["name"] + "</td>" +
+                                        "<td class='text-center' style='padding: 10px;'>" + time + "</td>" +
+                                        "</tr>");
+                                }
+                            }
+                        });
+                    },
+                    error: function (result) {
+                        console.log('No result!')
+                    }
+                });
+            }
+        });
+
+        const sendEmailBtn = document.querySelector('#send-email-btn')
+        sendEmailBtn.addEventListener("click", () => {
+            $.ajax({
+                type: 'POST',
+                url: '/send_attendance_email',
+                success: function (response) {
+                    console.log("Response of sending email: ", response);
+                    alert(response);
+                },
+                error: function (error) {
+                    alert('Error sending email:' + error)
+                }
+            });
+
+        });
+
+        const unlockBtn = document.querySelector("#unlock-btn")
+        unlockBtn.addEventListener("click", () => {
+            $.ajax({
+                type: 'GET',
+                url: '/unlock',
+                success: function (response) {
+                    console.log("Response of unlocking: ", response);
+                    alert(response);
+                },
+                error: function (error) {
+                    alert('Unlock door error!')
+                }
+            });
+        })
+    </script>
 
     <!-- Page level custom scripts -->
     <script>
