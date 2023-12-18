@@ -20,37 +20,36 @@ firebase_admin.initialize_app(
 bucket = storage.bucket()
 
 # Importing student images
-imgList = []
-studentIds = []
+img_list = []
+student_id_list = []
 
-students = dict(db.reference(f"student").get())
+students = dict(db.reference("student").get())
 
 for key, value in students.items():
     blob = bucket.get_blob(f"imgs/student/{key}.jpg")
     array = np.frombuffer(blob.download_as_string(), np.uint8)
-    imgStudent = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
-    imgList.append(imgStudent)
-    studentIds.append(key)
+    student_img = cv2.imdecode(array, cv2.COLOR_BGRA2BGR)
+    img_list.append(student_img)
+    student_id_list.append(key)
 
 
-def findEncodings(imagesList):
-    encodeList = []
-    for img in imagesList:
+def encode_face(image_list):
+    encoded_face_list = []
+    for img in image_list:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         encode = face_recognition.face_encodings(img)[0]
         print(encode)
-        encodeList.append(encode)
+        encoded_face_list.append(encode)
 
-    return encodeList
+    return encoded_face_list
 
 
-print("Encoding Started ...")
-encodeListKnown = findEncodings(imgList)
-encodeListKnownWithIds = [encodeListKnown, studentIds]
-print(encodeListKnownWithIds)
-print("Encoding Complete")
+print("Encoding started ...")
+encoded_known_list = encode_face(img_list)
+encoded_known_list_with_ids = [encoded_known_list, student_id_list]
+print("Encoding completed.")
 
-file = open("EncodeFile.p", "wb")
-pickle.dump(encodeListKnownWithIds, file)
+file = open("train/encoded_file.p", "wb")
+pickle.dump(encoded_known_list_with_ids, file)
 file.close()
-print("File Saved")
+print("File saved.")

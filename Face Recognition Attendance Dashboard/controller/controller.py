@@ -12,15 +12,13 @@ from flask import (
 import cv2
 import pickle
 import pandas as pd
-import os
 import face_recognition
 import numpy as np
 import urllib
-from repository.repository import *
+from dao.dao import *
 import base64
-from controller.esp32 import *
-from io import BytesIO
 from datetime import datetime
+from esp.esp32 import *
 
 Ctr = Blueprint("controller", __name__)
 
@@ -66,12 +64,16 @@ def logout():
 def home():
     if not session.get("teacher"):
         return render_template("login.html")
-    
+
     students, student_attendance = get_report()
     number_of_students = len(students)
     number_of_attendance = len(student_attendance)
 
-    return render_template("index.html", number_of_students = number_of_students, number_of_attendance=number_of_attendance)
+    return render_template(
+        "index.html",
+        number_of_students=number_of_students,
+        number_of_attendance=number_of_attendance,
+    )
 
 
 # 192.168.208.251

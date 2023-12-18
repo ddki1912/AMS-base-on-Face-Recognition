@@ -12,7 +12,7 @@ from flask import (
 from datetime import timedelta, datetime
 from flask_mail import Mail, Message
 from controller.controller import Ctr
-from repository.repository import *
+from dao.dao import *
 
 app = Flask(__name__)
 

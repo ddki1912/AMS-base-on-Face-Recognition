@@ -156,10 +156,11 @@ def delete_student(student_id):
 
 
 def train():
-    script_path = "D:/B20DCCN352/Year_4/Semester_1/IOT/BTL/EncodeGenerator.py"
+    script_path = (
+        "D:/GitHub/IOT/Face Recognition Attendance Dashboard/train/encode_face.py"
+    )
     try:
         subprocess.run(["python", script_path], check=True)
-
     except subprocess.CalledProcessError as e:
         print(f"Error running the script: {e}")
 
