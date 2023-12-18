@@ -85,7 +85,7 @@ known_face_encodings = []
 known_face_names = []
 
 print("Loading encoded file ...")
-file = open("D:\GitHub\IOT\Face Recognition Attendance Dashboard\EncodeFile.p", "rb")
+file = open("D:/GitHub/IOT/Face Recognition Attendance Dashboard/train/encoded_file.p", "rb")
 encoded_known_list_with_ids = pickle.load(file)
 file.close()
 
@@ -131,8 +131,9 @@ def get_video_frames(recognition):
                 face_distances = face_recognition.face_distance(
                     known_face_encodings, face_encoding
                 )
+                print(face_distances)
                 best_match_index = np.argmin(face_distances)
-                if matches[best_match_index]:
+                if matches[best_match_index] and face_distances[best_match_index] <= 40:
                     name = known_face_names[best_match_index]
                     students, student_attendance = get_class_attendance(
                         selected_date=datetime.today().strftime("%Y-%m-%d")

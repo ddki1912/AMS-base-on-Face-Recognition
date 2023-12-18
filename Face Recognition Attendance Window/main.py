@@ -95,7 +95,7 @@ while True:
             face_dist = face_recognition.face_distance(encoded_known_list, encoded_face)
             match_index = np.argmin(face_dist)
 
-            if matches[match_index]:
+            if matches[match_index] and face_dist[match_index] <= 40:
                 y1, x2, y2, x1 = face_loc
                 y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
 
