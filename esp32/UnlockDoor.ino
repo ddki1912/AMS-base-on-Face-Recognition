@@ -1,7 +1,9 @@
 #include <WiFi.h>
+#include <ESP32Servo.h>
+
 #define GREEN 15
 #define RED 4
-#define RELAY 5
+#define SERVO 13
 
 // Update these with values suitable for your network.
 const char* ssid = "Kien";
@@ -9,11 +11,14 @@ const char* password = "(@ddk1912@)";
 
 WiFiServer server(80);
 
+Servo myServo;
+
 void setup() {
   Serial.begin(115200);
   pinMode(RED, OUTPUT);
   pinMode(GREEN, OUTPUT);
-  pinMode(RELAY, OUTPUT);
+
+  myServo.attach(SERVO);
 
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
@@ -39,26 +44,26 @@ void loop() {
         String command = client.readStringUntil('\n');
         command.trim();
         if (command == "open") {
-          digitalWrite(RELAY, HIGH);
           digitalWrite(GREEN, HIGH);
           digitalWrite(RED, LOW);
+          myServo.write(90);
           delay(10000);
         } else {
-          digitalWrite(RELAY, LOW);
           digitalWrite(GREEN, LOW);
           digitalWrite(RED, HIGH);
+          myServo.write(0);
         }
       } else {
-        digitalWrite(RELAY, LOW);
         digitalWrite(GREEN, LOW);
         digitalWrite(RED, HIGH);
+        myServo.write(0);
       }
     }
     client.stop();
     Serial.println("Client disconnected");
   } else {
-    digitalWrite(RELAY, LOW);
     digitalWrite(GREEN, LOW);
     digitalWrite(RED, HIGH);
+    myServo.write(0);
   }
 }
