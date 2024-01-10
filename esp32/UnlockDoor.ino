@@ -6,8 +6,8 @@
 #define SERVO 13
 
 // Update these with values suitable for your network.
-const char* ssid = "Kien";
-const char* password = "(@ddk1912@)";
+const char* ssid = "******";
+const char* password = "********";
 
 WiFiServer server(80);
 
